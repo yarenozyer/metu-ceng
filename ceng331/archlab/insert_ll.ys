@@ -1,0 +1,104 @@
+#yaren buse özyer 
+#2448785
+
+# Execution begins at address 0 
+	.pos 0
+init:
+    irmovq stack, %rsp      # Set up stack pointer
+    irmovq ele0, %rdi   #head to first argument
+    irmovq array, %rsi  #array pointer to second argumentt
+    irmovq $56, %rdx #value to third argument
+    call main       # Execute main program
+    halt            # Terminate program 
+
+# linked list
+    .pos 0x200
+    ele0:
+    .quad 0x0005
+    .quad ele1
+    ele1:
+    .quad 0x000c
+    .quad ele2
+    ele2:
+    .quad 0x0010
+    .quad ele3
+    ele3:
+    .quad 0x001a
+    .quad ele4
+    ele4:
+    .quad 0x0030
+    .quad ele5
+    ele5:
+    .quad 0x0045
+    .quad ele6
+    ele6:
+    .quad 0x005e
+    .quad 0 # Remember that 0 is null.
+
+#array
+.pos 0x400
+    array:
+    .quad 0
+    .quad 0
+   
+main:   
+    call insert_ll
+    ret
+
+
+# head %rdi, array %rsi, value %rdx
+insert_ll:    
+    rmmovq %rdx, (%rsi) #move value to array
+    andq %rdi, %rdi #if !head
+    je if #if its equal to 0
+    rrmovq %rdx, %r8 #copy value to compare
+    mrmovq (%rdi), %r9 #copy head->value to compare
+    subq %r9, %r8 #if head->value >value
+    jl if
+    jmp else
+    
+else: 
+    rmmovq %rdi, (%rax) # *temp = head
+    jmp test1
+    
+    
+
+if: 
+    rmmovq %rdi, 8(%rsi) #array +1 = head
+    rrmovq %rsi, %rax #ret = array
+    ret
+    
+test1:
+    mrmovq (%rax), %r8 #copy temp to compare
+    mrmovq 8(%r8), %r8 #copy temp->next to compare 
+    andq %r8, %r8 #if !temp->next
+    jne test2
+    jmp conditionfailed
+   
+test2:
+    mrmovq (%rax), %r8 #copy temp to compare
+     mrmovq 16(%r8), %r9 #copy temp->next->value to compare
+     rrmovq %rdx, %rcx #copy value to compare
+     subq %rcx, %r9 #if temp->next->value <value
+     jl loop
+     jmp conditionfailed
+     
+loop:
+    mrmovq (%rax), %r8 #copy temp to move
+    mrmovq 8(%r8), %r9
+    rmmovq %r9,(%rax)  #temp = temp->next
+    jmp test1
+    
+conditionfailed:
+    mrmovq (%rax), %r8 #copy temp to move
+    mrmovq 8(%r8), %r8 #mov temp-> next
+    rmmovq %r8, 8(%rsi) #array+1 = temp->next
+    mrmovq (%rax), %r8 #copy temp to move
+    rmmovq %rsi, 8(%r8) #temp->next = array
+    rrmovq %rdi, %rax #move head to ret
+    ret
+# Stack starts here and grows to lower addresses
+.pos 0x800
+stack:
+
+    

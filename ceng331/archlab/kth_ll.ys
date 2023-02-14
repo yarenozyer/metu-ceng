@@ -1,0 +1,69 @@
+#yaren buse özyer 
+#2448785
+
+# Execution begins at address 0 
+    .pos 0
+
+init:
+    irmovq stack, %rsp      # Set up stack pointer
+    irmovq ele0, %rdi
+    irmovq $4, %rsi
+    call main       # Execute main program
+    halt            # Terminate program 
+
+# linked list
+    .pos 0x200
+    ele0:
+    .quad 0x0005
+    .quad ele1
+    ele1:
+    .quad 0x000c
+    .quad ele2
+    ele2:
+    .quad 0x0010
+    .quad ele3
+    ele3:
+    .quad 0x001a
+    .quad ele4
+    ele4:
+    .quad 0x0030
+    .quad ele5
+    ele5:
+    .quad 0x0045
+    .quad ele6
+    ele6:
+    .quad 0x005e
+    .quad 0 # Remember that 0 is null.
+
+main:   
+    call kth_ll
+    ret
+
+# head %rdi, k %rsi
+kth_ll:    
+    xorq %rax,%rax        # set up kth
+    irmovq $1,%r8      #constant 1
+    jmp     test         # Goto test
+    
+    
+loop:   
+    subq %r8,%rsi   #k--   
+    rrmovq %r8, %r10   #set up register for checking later
+    andq %rsi, %rsi
+    jne conditionfailed
+    mrmovq (%rdi), %rax     #kth = head->value
+    ret #break and return
+    
+conditionfailed: 
+    mrmovq 8(%rdi), %rdi #head = head->next
+    jmp test
+
+test: 
+    andq %rdi,%rdi       # Set CC
+    jne    loop          # Stop when 0
+    ret                  # Return
+
+# Stack starts here and grows to lower addresses
+    .pos 0x800
+stack:
+
