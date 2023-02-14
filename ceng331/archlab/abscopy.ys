@@ -1,0 +1,225 @@
+#/* $begin abscopy-ys */
+##################################################################
+# abscopy.ys - copy the absolute values of a src block of n words to dst.
+# Return the sum of copied (absolute) values.
+#
+# yaren buse özyer
+# 2448785
+#
+#1)I implemented isubq in pipe-full.hcl and used it for the implementation of negation 
+#and to check the length for my loop unrolling.
+#
+#2)I used loop unrolling for groups of 5. I tried for different group sizes and found the best performance was for 
+#groups of 5. And I tried to unroll the remainder but it didnt improve my code a lot.
+#
+#
+#3)I put literals that I used repeatedly in the beggining of my code. (very minor improvement.)
+# In the end I managed to see a CPE of 10.71
+# Include your name and ID here.
+# Describe how and why you modified the baseline code.
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = n
+abscopy:
+##################################################################
+# You can modify this portion
+        # Loop header
+        xorq %rax,%rax          # sum = 0;
+	rrmovq %rdx, %r14
+	isubq $5, %r14
+	jg RemCheck
+        irmovq $5, %rbx			#5
+        irmovq $40, %rcx		#40
+
+Loop1:   
+        mrmovq (%rdi), %r8     # read val from src...
+        mrmovq 8(%rdi), %r9	#read val2 from src
+        mrmovq 16(%rdi), %r10	#read val3 from src
+        mrmovq 24(%rdi), %r11	#read val4 from src
+        mrmovq 32(%rdi), %r12
+        andq %r8, %r8         # val >= 0?
+        jge Negative2
+	isubq $0, %r8
+
+		
+Negative2: 	
+	andq %r9, %r9         # val >= 0?
+ 	jge Negative3
+	isubq $0, %r9	
+
+		
+Negative3: 		
+	andq %r10, %r10         # val >= 0?
+ 	jge Negative4
+	isubq $0, %r10	
+
+Negative4: 	
+	andq %r11, %r11	
+	jge Negative5
+	isubq $0, %r11
+
+Negative5:
+	andq %r12, %r12
+	jge Pos
+	isubq $0, %r12
+	
+
+		
+Pos:
+	
+	addq %r8, %rax			#sum += absval1
+        addq %r9,%rax         	# sum += absval2 
+        addq %r10, %rax         # sum += absval3   
+        addq %r11, %rax         # sum += absval4  
+        addq %r12, %rax         # sum += absval5
+	rmmovq %r8, (%rsi)     # ...and store it to dst1	
+        rmmovq %r9, 8(%rsi)     # ...and store it to dst2
+        rmmovq %r10, 16(%rsi)     # ...and store it to dst3
+        rmmovq %r11, 24(%rsi)     # ...and store it to dst4
+        rmmovq %r12, 32(%rsi)     # ...and store it to dst5	
+        subq %rbx, %rdx         # n-=5
+        addq %rcx, %rsi         # dst+=5
+        addq %rcx, %rdi         # src+=5
+        rrmovq %rdx, %r9
+        isubq $5, %r9
+        jle Loop1                 # if so, goto Loop:
+
+
+RemCheck:
+	andq %rdx, %rdx
+	jle Done
+ 	rrmovq %rdx, %r14
+	isubq $2, %r14
+        jg R1
+	rrmovq %rdx, %r14
+	isubq $3, %r14
+	jg R2
+	rrmovq %rdx, %r14
+	isubq $4, %r14
+	jg R3
+	
+
+
+R4:
+	mrmovq (%rdi), %r8     # read val from src...
+	mrmovq 8(%rdi), %r9     # read val from src...
+	mrmovq 16(%rdi), %r10     # read val from src...
+	mrmovq 24(%rdi), %r11     # read val from src...
+       	andq %r8, %r8         # val >= 0?
+        jge RN1       
+	isubq $0, %r8    
+        jmp RN1	
+
+R3:	
+	mrmovq (%rdi), %r9     # read val from src...
+	mrmovq 8(%rdi), %r10     # read val from src...
+	mrmovq 16(%rdi), %r11     # read val from src...
+       	jmp RN2
+	
+R2:		
+		mrmovq (%rdi), %r10     # read val from src...
+		mrmovq 8(%rdi), %r11     # read val from src...
+		jmp RN3
+		
+		
+R1:
+		mrmovq (%rdi), %r11     # read val from src...
+		jmp RN4
+
+RN1:
+	andq %r8, %r8        # val >= 0?
+        jge RN2  
+	isubq 0, %r8		#negate val2
+			
+RN2:
+	andq %r9, %r9        # val >= 0?
+        jge RN3  
+	isubq 0, %r9		#negate val2
+		
+RN3:
+	andq %r10, %r10
+	jge RN4
+	isubq $0, %r10		#negate val1
+
+RN4:
+	andq %r11, %r11
+	jge PosCheck
+	isubq $0, %r11		#negate val1
+
+PosCheck:
+	rrmovq %rdx, %r13
+	isubq $2, %r13
+        jg RP1
+	rrmovq %rdx, %r13
+	isubq $3, %r13
+	jg RP2
+	rrmovq %rdx, %r13
+	isubq $4, %r13
+	jg RP3
+
+RP4:
+        addq %r8, %rax         # sum += absval   
+        addq %r9, %rax         # sum += absval   
+        addq %r10, %rax         # sum += absval     
+	addq %r11, %rax
+        rmmovq %r8, (%rsi)     # ...and store it to dst
+        rmmovq %r9, 8(%rsi)     # ...and store it to dst
+        rmmovq %r10, 16(%rsi)     # ...and store it to dst
+	rmmovq %r11, 24(%rsi)     # ...and store it to dst
+        irmovq $4, %r10
+        subq %r10, %rdx         # n--
+        irmovq $32, %r10
+        addq %r10, %rsi         # dst++
+        addq %r10, %rdi         # src++
+        ret
+
+RP3:
+        addq %r9, %rax         # sum += absval   
+        addq %r10, %rax         # sum += absval   
+        addq %r11, %rax         # sum += absval     
+        rmmovq %r9, (%rsi)     # ...and store it to dst
+        rmmovq %r10, 8(%rsi)     # ...and store it to dst
+        rmmovq %r11, 16(%rsi)     # ...and store it to dst
+        irmovq $3, %r10
+        subq %r10, %rdx         # n--
+        irmovq $24, %r10
+        addq %r10, %rsi         # dst++
+        addq %r10, %rdi         # src++
+        ret
+        
+        
+
+RP2: 
+        addq %r10, %rax         # sum += absval   
+        addq %r11, %rax         # sum += absval   
+        rmmovq %r10, (%rsi)     # ...and store it to dst
+        rmmovq %r11, 8(%rsi)     # ...and store it to dst
+        irmovq $2, %r10
+        subq %r10, %rdx         # n--
+        irmovq $16, %r10
+        addq %r10, %rsi         # dst++
+        addq %r10, %rdi         # src++
+        ret
+        
+        
+
+RP1:   
+        addq %r11, %rax         # sum += absval   
+        rmmovq %r11, (%rsi)     # ...and store it to dst
+        irmovq $1, %r10
+        subq %r10, %rdx         # n--
+        irmovq $8, %r10
+        addq %r10, %rsi         # dst++
+        addq %r10, %rdi         # src++
+        ret
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+        ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end abscopy-ys */
